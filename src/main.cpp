@@ -12,6 +12,7 @@ void showMenu() {
     std::cout << "3. Run Max-Flow Assignment" << std::endl;
     std::cout << "4. Risk Analysis (R1/RK)" << std::endl;
     std::cout << "5. Export Results" << std::endl;
+    std::cout << "6. Run Batch Mode" << std::endl;
     std::cout << "0. Exit" << std::endl;
     std::cout << "Escolha uma opcao: ";
 }
@@ -88,6 +89,29 @@ void handleInteractiveMenu() {
             case 5:
                 exportResults(globalConfig.outputFileName);
                 break;
+            case 6: {
+                std::string inFilename;
+                std::cout << "Introduza o nome do ficheiro de ENTRADA (ex: dataset3.csv): ";
+                std::cin >> inFilename;
+                std::string inputPath = "../input/" + inFilename;
+
+                std::cout << "\n[BATCH MODE] A processar tudo automaticamente...\n";
+
+                // Faz o fluxo do Batch Mode, mas usa o nome de saida que o CSV definiu!
+                if (loadInputAndBuildGraph(inputPath)) {
+                    runMaxFlowAssignment();
+
+                    if (globalConfig.riskAnalysis > 0) {
+                        runRiskAnalysis();
+                    }
+
+                    // Exporta usando o nome padrao lido do ficheiro (ex: output_dataset3.csv)
+                    exportResults(globalConfig.outputFileName);
+
+                    std::cout << "\n[BATCH MODE] Processo concluido com sucesso!\n";
+                }
+                break;
+            }
             case 0:
                 std::cout << "A sair...\n";
                 break;

@@ -7,4 +7,5 @@ add_executable(DA_grupo_7 src/main.cpp
         data_structures/Graph.h
         src/backend.h
         src/backend.cpp
+        src/Algorithms.h
         src/Algorithms.h)

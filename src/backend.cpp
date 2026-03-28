@@ -50,6 +50,14 @@ bool loadInputAndBuildGraph(const std::string& filename) {
         return false;
     }
 
+    std::vector<std::string> nodesToDel;
+    for (auto v : conferenceGraph.getVertexSet()) {
+        nodesToDel.push_back(v->getInfo());
+    }
+    for (const auto& n : nodesToDel) {
+        conferenceGraph.removeVertex(n);
+    }
+
     globalSubs.clear();
     globalRevs.clear();
 
@@ -393,15 +401,19 @@ void exportResults(const std::string& filename) {
         }
     }
 
-    if (globalConfig.riskAnalysis > 0 && !globalRiskyReviewers.empty()) {
-        std::sort(globalRiskyReviewers.begin(), globalRiskyReviewers.end());
-
+    if (globalConfig.riskAnalysis > 0) {
+        // 1. Imprime SEMPRE o cabeçalho se a análise de risco estiver ativa
         out << "#Risk Analysis: " << globalConfig.riskAnalysis << "\n";
-        for (size_t i = 0; i < globalRiskyReviewers.size(); i++) {
-            out << globalRiskyReviewers[i];
-            if (i < globalRiskyReviewers.size() - 1) out << ", ";
+
+        // 2. SÓ imprime os números se a lista NÃO estiver vazia
+        if (!globalRiskyReviewers.empty()) {
+            std::sort(globalRiskyReviewers.begin(), globalRiskyReviewers.end());
+            for (size_t i = 0; i < globalRiskyReviewers.size(); i++) {
+                out << globalRiskyReviewers[i];
+                if (i < globalRiskyReviewers.size() - 1) out << ", ";
+            }
+            out << "\n"; // Quebra de linha no fim dos números
         }
-        out << "\n";
     }
 
 
