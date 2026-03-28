@@ -34,7 +34,19 @@ void runBatchMode(const std::string& input, const std::string& output) {
     std::cout << "Modo Batch Ativado!" << std::endl;
     std::cout << "A ler de: " << input << std::endl;
     std::cout << "A gravar em: " << output << std::endl;
-    // Aqui virá a lógica de abrir os ficheiros CSV
+
+    if (loadInputAndBuildGraph(input)) {
+        runMaxFlowAssignment();
+
+        if (globalConfig.riskAnalysis > 0) {
+            runRiskAnalysis();
+        }
+
+        exportResults(output);
+    }
+    else {
+        std::cerr << "[ERRO] Falha ao processar ficheiro no modo batch." << std::endl;
+    }
 }
 
 void handleInteractiveMenu() {
@@ -71,7 +83,7 @@ void handleInteractiveMenu() {
                 runMaxFlowAssignment();
                 break;
             case 4:
-                // runRiskAnalysis();
+                runRiskAnalysis();
                 break;
             case 5:
                 exportResults(globalConfig.outputFileName);

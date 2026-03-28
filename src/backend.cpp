@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include "Algorithms.h"
 
 // ==========================================
 // 1. DEFINIÇÃO DAS VARIÁVEIS GLOBAIS
@@ -166,7 +167,7 @@ void runMaxFlowAssignment() {
         return;
     }
     std::cout << "\nA executar Algoritmo de Fluxo Maximo (Edmonds-Karp)...\n";
-    // edmondsKarp(conferenceGraph, "SOURCE", "SINK");
+    edmondsKarp(&conferenceGraph, std::string("SOURCE"), std::string("SINK"));
     std::cout << "[SUCESSO] Distribuicao calculada com sucesso!\n";
 }
 
@@ -207,7 +208,7 @@ void testRiskCombinations(int k, int startIdx, std::vector<int>& currentCombo, i
 
         // Passo 2: Limpar fluxos e correr o algoritmo
         resetGraphFlows();
-        // edmondsKarp(conferenceGraph, "SOURCE", "SINK"); // <-- DESCOMENTA ISTO!
+        edmondsKarp(&conferenceGraph, std::string("SOURCE"), std::string("SINK"));
 
         // Passo 3: Verificar se o sistema falhou (fluxo ficou abaixo do ideal)
         int newFlow = calculateTotalFlow();
@@ -277,7 +278,7 @@ void runRiskAnalysis() {
 
     // 4. BÓNUS: Voltar a correr o fluxo original para que o grafo fique pronto para exportar os Assignments normais!
     resetGraphFlows();
-    // edmondsKarp(conferenceGraph, "SOURCE", "SINK"); // <-- DESCOMENTA ISTO!
+    edmondsKarp(&conferenceGraph, std::string("SOURCE"), std::string("SINK"));
 }
 
 int getMatchDomain(const Submission& s, const Reviewer& r, const Config& config) {
