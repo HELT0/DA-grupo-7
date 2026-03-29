@@ -10,7 +10,7 @@
 std::vector<Submission> globalSubs;
 std::vector<Reviewer> globalRevs;
 Config globalConfig;
-Graph<std::string> conferenceGraph; // Descomenta quando tiveres o Grafo
+Graph<std::string> conferenceGraph;
 std::vector<int> globalRiskyReviewers;
 
 // ==========================================
@@ -264,6 +264,14 @@ void runRiskAnalysis() {
     // 1. Descobrir qual é o Fluxo Máximo "Ideal" (Todas as submissões tratadas)
     int targetFlow = globalSubs.size() * globalConfig.minReviewsPerSubmission;
     globalRiskyReviewers.clear();
+
+    resetGraphFlows();
+    edmondsKarp(&conferenceGraph, std::string("SOURCE"), std::string("SINK"));
+    if (calculateTotalFlow() < targetFlow) {
+        std::cout << "[RESULTADO] A conferencia ja nao atinge o minimo de revisoes por defeito.\n";
+        std::cout << "Nao existem revisores de risco a assinalar (a rede ja e insuficiente).\n";
+        return;
+    }
 
     // 2. Iniciar a pesquisa de combinações de tamanho K
     int K = globalConfig.riskAnalysis;
