@@ -7,7 +7,7 @@
 
 #include <string>
 #include <vector>
-#include "../data_structures/Graph.h" // Certifica-te que o caminho esta correto para a tua estrutura de pastas
+#include "../data_structures/Graph.h"
 
 /**
  * @brief Estrutura que representa uma submissao de um artigo cientifico.

@@ -9,15 +9,23 @@
 // ==========================================
 // 1. DEFINIÇÃO DAS VARIÁVEIS GLOBAIS
 // ==========================================
-std::vector<Submission> globalSubs;
-std::vector<Reviewer> globalRevs;
-Config globalConfig;
-Graph<std::string> conferenceGraph;
-std::vector<int> globalRiskyReviewers;
+std::vector<Submission> globalSubs; /**< @brief Lista global de submissões lidas do ficheiro. */
+std::vector<Reviewer> globalRevs; /**< @brief Lista global de revisores lidos do ficheiro. */
+Config globalConfig; /**< @brief Configurações globais e parâmetros de execução. */
+Graph<std::string> conferenceGraph; /**< @brief Grafo principal que modela a rede de fluxo. */
+std::vector<int> globalRiskyReviewers; /**< @brief Lista de IDs dos revisores identificados como de risco. */
 
 // ==========================================
 // 2. FUNÇÕES AUXILIARES DO PARSER
 // ==========================================
+
+/**
+ * @brief Remove espaços em branco do início e do fim de uma string.
+ * * @param str A string a ser limpa.
+ * @return std::string A string sem os espaços em branco iniciais e finais.
+ * * @par Time Complexity
+ * O(N), onde N é o comprimento da string.
+ */
 std::string trim(const std::string& str) {
     size_t first = str.find_first_not_of(" \t\r\n");
     if (std::string::npos == first) return "";
@@ -25,6 +33,13 @@ std::string trim(const std::string& str) {
     return str.substr(first, (last - first + 1));
 }
 
+/**
+ * @brief Divide uma linha CSV em múltiplos tokens, ignorando vírgulas dentro de aspas.
+ * * @param line A linha de texto a processar.
+ * @return std::vector<std::string> Um vetor com os tokens extraídos da linha.
+ * * @par Time Complexity
+ * O(N), onde N é o número de caracteres na linha.
+ */
 std::vector<std::string> splitCSVLine(const std::string& line) {
     std::vector<std::string> result;
     std::string currentToken;
@@ -45,6 +60,18 @@ std::vector<std::string> splitCSVLine(const std::string& line) {
 // ==========================================
 // 3. O PARSER (Lê o CSV e Monta o Grafo)
 // ==========================================
+
+/**
+ * @brief Lê o ficheiro de input, preenche as estruturas de dados e constrói o grafo bipartido.
+ * * Verifica duplicados, formatação inválida e aplica as regras de matching definidas
+ * na configuração (GenerateAssignments) para criar as arestas entre submissões e revisores.
+ * * @param filename O caminho para o ficheiro CSV.
+ * @return true Se a leitura e construção foram bem-sucedidas.
+ * @return false Se ocorreu algum erro (ficheiro não encontrado, formato inválido, IDs duplicados).
+ * * @par Time Complexity
+ * O(L + S * R), onde L é o número de linhas no ficheiro, S é o número de submissões e R é o número de revisores.
+ * A leitura do ficheiro custa O(L), enquanto a construção das arestas exige verificar todos os pares submissão-revisor, custando O(S * R).
+ */
 bool loadInputAndBuildGraph(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -211,6 +238,13 @@ bool loadInputAndBuildGraph(const std::string& filename) {
 // ==========================================
 // 4. FUNCIONALIDADES RESTANTES DO BACKEND
 // ==========================================
+
+/**
+ * @brief Executa a atribuição normal de revisões utilizando Max-Flow.
+ * * Invoca o algoritmo de Edmonds-Karp sobre o grafo previamente construído.
+ * * @par Time Complexity
+ * O(V * E^2), correspondente à execução do algoritmo de Edmonds-Karp, onde V é o número de vértices e E o de arestas.
+ */
 void runMaxFlowAssignment() {
     if (globalSubs.empty() || globalRevs.empty()) {
         std::cerr << "[ERRO] Base de dados vazia. Carregue um dataset primeiro.\n";
@@ -226,6 +260,13 @@ void runMaxFlowAssignment() {
 // ==========================================
 
 // 1. Limpa os fluxos de todas as arestas para podermos correr o Max-Flow de novo
+
+/**
+ * @brief Faz reset a todos os fluxos das arestas do grafo para 0.
+ * * Necessário para correr o algoritmo de fluxo máximo múltiplas vezes com configurações diferentes.
+ * * @par Time Complexity
+ * O(V + E), iterando por todos os vértices e respetivas arestas.
+ */
 void resetGraphFlows() {
     for (auto v : conferenceGraph.getVertexSet()) {
         for (auto e : v->getAdj()) {
@@ -235,6 +276,13 @@ void resetGraphFlows() {
 }
 
 // 2. Calcula quanto fluxo saiu da SOURCE
+
+/**
+ * @brief Calcula o fluxo total de saída a partir do vértice SOURCE.
+ * * @return int O valor do fluxo total distribuído na rede.
+ * * @par Time Complexity
+ * O(S), onde S é o grau de saída do nó SOURCE (equivalente ao número de submissões).
+ */
 int calculateTotalFlow() {
     int totalFlow = 0;
     auto sourceVertex = conferenceGraph.findVertex("SOURCE");
@@ -247,6 +295,20 @@ int calculateTotalFlow() {
 }
 
 // 3. Função recursiva para testar combinações de K revisores
+
+/**
+ * @brief Testa combinações de K revisores, removendo-os da rede e avaliando o impacto no fluxo máximo.
+ * * Função recursiva que gera todas as combinações (n escolhe k) de revisores. Para cada combinação,
+ * remove temporariamente a sua ligação ao poço (SINK), recalcula o Max-Flow e regista a combinação
+ * se o fluxo alvo falhar.
+ * * @param k Número de revisores a retirar na iteração atual.
+ * @param startIdx Índice inicial no vetor global de revisores.
+ * @param currentCombo Estado atual da combinação gerada recursivamente.
+ * @param targetFlow O fluxo máximo ideal esperado (MinReviews * Submissões).
+ * * @par Time Complexity
+ * O( C(R, K) * V * E^2 ), onde R é o número total de revisores e C(R, K) são as combinações de R elementos
+ * agrupados K a K. O custo de cada simulação é dominado pela chamada ao Edmonds-Karp O(V * E^2).
+ */
 void testRiskCombinations(int k, int startIdx, std::vector<int>& currentCombo, int targetFlow) {
     // Caso base: Já escolhemos K revisores para "despedir"
     if (k == 0) {
@@ -290,6 +352,14 @@ void testRiskCombinations(int k, int startIdx, std::vector<int>& currentCombo, i
 // ==========================================
 // FUNCIONALIDADE 4: ANÁLISE DE RISCO PRINCIPAL
 // ==========================================
+
+/**
+ * @brief Orquestra e executa o processo de Análise de Risco.
+ * * Define o fluxo alvo (target), corre uma verificação inicial de segurança, invoca a geração de
+ * combinações de risco e, no fim, repõe a rede no estado normal validado pelo fluxo original.
+ * * @par Time Complexity
+ * Dominado por testRiskCombinations(): O( C(R, K) * V * E^2 ).
+ */
 void runRiskAnalysis() {
     if (globalConfig.riskAnalysis == 0) {
         std::cout << "Analise de risco esta desativada (RiskAnalysis = 0).\n";
@@ -339,6 +409,16 @@ void runRiskAnalysis() {
     edmondsKarp(&conferenceGraph, std::string("SOURCE"), std::string("SINK"));
 }
 
+/**
+ * @brief Identifica o domínio específico em que a Submissão e o Revisor tiveram correspondência.
+ * * Baseia-se na configuração de restrição `GenerateAssignments`.
+ * * @param s A submissão.
+ * @param r O revisor.
+ * @param config A configuração atual.
+ * @return int O domínio em comum (primário ou secundário) validado pelas regras.
+ * * @par Time Complexity
+ * O(1), executa uma série restrita de comparações lógicas em tempo constante.
+ */
 int getMatchDomain(const Submission& s, const Reviewer& r, const Config& config) {
     // Tenta primeiro o match primário vs primário
     if (config.generateAssignments >= 1) {
@@ -359,6 +439,17 @@ int getMatchDomain(const Submission& s, const Reviewer& r, const Config& config)
 // ==========================================
 // EXPORTAÇÃO DE RESULTADOS
 // ==========================================
+
+/**
+ * @brief Formata e exporta os resultados do processamento para um ficheiro CSV.
+ * * Analisa as arestas do grafo para identificar quais os revisores atribuídos a cada submissão (fluxo = 1).
+ * Verifica défices de cobertura e identifica os revisores críticos (Risco). Todos os dados exportados
+ * são devidamente ordenados antes da escrita de acordo com os requisitos.
+ * * @param filename O nome base do ficheiro a ser gerado na pasta de destino (`../output/`).
+ * * @par Time Complexity
+ * O(S * E_s + A log A), onde S é o número de submissões, E_s o número médio de arestas à saída de cada submissão,
+ * e A o número total de atribuições realizadas, devido às operações de ordenação (std::sort).
+ */
 void exportResults(const std::string& filename) {
     if (globalConfig.generateAssignments == 0) {
         std::cout << "[AVISO] GenerateAssignments = 0. A exportacao foi cancelada.\n";
@@ -478,6 +569,14 @@ void exportResults(const std::string& filename) {
 // ==========================================
 // FUNÇÃO DE DEBUG: MOSTRAR O GRAFO
 // ==========================================
+
+/**
+ * @brief Imprime a estrutura atual do grafo na consola para efeitos de debug.
+ * * Lista todos os vértices da rede e as suas arestas adjacentes, incluindo
+ * as capacidades (weight) e os fluxos correntes (flow).
+ * * @par Time Complexity
+ * O(V + E), iteração total por todos os nós e arestas.
+ */
 void displayGraph() {
     if (conferenceGraph.getNumVertex() == 0) {
         std::cout << "[AVISO] O grafo esta vazio. Carregue um ficheiro primeiro.\n";
