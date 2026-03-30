@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <unordered_set>
+
 #include "Algorithms.h"
 
 // ==========================================
@@ -64,6 +66,8 @@ bool loadInputAndBuildGraph(const std::string& filename) {
     enum State { NONE, SUBMISSIONS, REVIEWERS, PARAMETERS, CONTROL };
     State currentState = NONE;
     std::string line;
+    std::unordered_set<int> seenSubIds;
+    std::unordered_set<int> seenRevIds;
 
     // FASE A: LER O FICHEIRO
     while (std::getline(file, line)) {
@@ -83,38 +87,77 @@ bool loadInputAndBuildGraph(const std::string& filename) {
 
         std::vector<std::string> tokens = splitCSVLine(line);
 
-        if (currentState == SUBMISSIONS && tokens.size() >= 5) {
-            Submission s;
-            s.id = std::stoi(tokens[0]);
-            s.title = tokens[1];
-            s.authors = tokens[2];
-            s.email = tokens[3];
-            s.primaryDomain = std::stoi(tokens[4]);
-            s.secondaryDomain = (tokens.size() > 5 && !tokens[5].empty()) ? std::stoi(tokens[5]) : -1;
-            globalSubs.push_back(s);
-        }
-        else if (currentState == REVIEWERS && tokens.size() >= 4) {
-            Reviewer r;
-            r.id = std::stoi(tokens[0]);
-            r.name = tokens[1];
-            r.email = tokens[2];
-            r.primaryExpertise = std::stoi(tokens[3]);
-            r.secondaryExpertise = (tokens.size() > 4 && !tokens[4].empty()) ? std::stoi(tokens[4]) : -1;
-            globalRevs.push_back(r);
-        }
-        else if (currentState == PARAMETERS || currentState == CONTROL) {
-            if (tokens.size() >= 2) {
-                std::string key = tokens[0], val = tokens[1];
-                if (key == "MinReviewsPerSubmission") globalConfig.minReviewsPerSubmission = std::stoi(val);
-                else if (key == "MaxReviewsPerReviewer") globalConfig.maxReviewsPerReviewer = std::stoi(val);
-                else if (key == "PrimaryReviewerExpertise") globalConfig.primaryReviewerExpertise = std::stoi(val);
-                else if (key == "SecondaryReviewerExpertise") globalConfig.secondaryReviewerExpertise = std::stoi(val);
-                else if (key == "PrimarySubmissionDomain") globalConfig.primarySubmissionDomain = std::stoi(val);
-                else if (key == "SecondarySubmissionDomain") globalConfig.secondarySubmissionDomain = std::stoi(val);
-                else if (key == "GenerateAssignments") globalConfig.generateAssignments = std::stoi(val);
-                else if (key == "RiskAnalysis") globalConfig.riskAnalysis = std::stoi(val);
-                else if (key == "OutputFileName") globalConfig.outputFileName = val;
+        try {
+            if (currentState == SUBMISSIONS) {
+                // Verificar se tem pelo menos 5 campos (ID, Titulo, Autores, Email, Dominio Primario)
+                if (tokens.size() < 5 || tokens[0].empty() || tokens[4].empty()) {
+                    std::cerr << "[ERRO] Submissao com parametros em falta ou dominio vazio: " << line << std::endl;
+                    return false;
+                }
+
+                int subId = std::stoi(tokens[0]);
+
+                // Verificar IDs Duplicados
+                if (seenSubIds.find(subId) != seenSubIds.end()) {
+                    std::cerr << "[ERRO] Ficheiro rejeitado: ID de Submissao duplicado encontrado (" << subId << ")." << std::endl;
+                    return false;
+                }
+                seenSubIds.insert(subId);
+
+                Submission s;
+                s.id = subId;
+                s.title = tokens[1];
+                s.authors = tokens[2];
+                s.email = tokens[3];
+                s.primaryDomain = std::stoi(tokens[4]);
+                s.secondaryDomain = (tokens.size() > 5 && !tokens[5].empty()) ? std::stoi(tokens[5]) : -1;
+                globalSubs.push_back(s);
             }
+            else if (currentState == REVIEWERS) {
+                // Verificar se tem pelo menos 4 campos (ID, Nome, Email, Expertise Primario)
+                if (tokens.size() < 4 || tokens[0].empty() || tokens[3].empty()) {
+                    std::cerr << "[ERRO] Revisor com parametros em falta ou expertise vazia: " << line << std::endl;
+                    return false;
+                }
+
+                int revId = std::stoi(tokens[0]);
+
+                // Verificar IDs Duplicados
+                if (seenRevIds.find(revId) != seenRevIds.end()) {
+                    std::cerr << "[ERRO] Ficheiro rejeitado: ID de Revisor duplicado encontrado (" << revId << ")." << std::endl;
+                    return false;
+                }
+                seenRevIds.insert(revId);
+
+                Reviewer r;
+                r.id = revId;
+                r.name = tokens[1];
+                r.email = tokens[2];
+                r.primaryExpertise = std::stoi(tokens[3]);
+                r.secondaryExpertise = (tokens.size() > 4 && !tokens[4].empty()) ? std::stoi(tokens[4]) : -1;
+                globalRevs.push_back(r);
+            }
+            else if (currentState == PARAMETERS || currentState == CONTROL) {
+                if (tokens.size() >= 2) {
+                    std::string key = tokens[0], val = tokens[1];
+                    if (key == "MinReviewsPerSubmission") globalConfig.minReviewsPerSubmission = std::stoi(val);
+                    else if (key == "MaxReviewsPerReviewer") globalConfig.maxReviewsPerReviewer = std::stoi(val);
+                    else if (key == "PrimaryReviewerExpertise") globalConfig.primaryReviewerExpertise = std::stoi(val);
+                    else if (key == "SecondaryReviewerExpertise") globalConfig.secondaryReviewerExpertise = std::stoi(val);
+                    else if (key == "PrimarySubmissionDomain") globalConfig.primarySubmissionDomain = std::stoi(val);
+                    else if (key == "SecondarySubmissionDomain") globalConfig.secondarySubmissionDomain = std::stoi(val);
+                    else if (key == "GenerateAssignments") globalConfig.generateAssignments = std::stoi(val);
+                    else if (key == "RiskAnalysis") globalConfig.riskAnalysis = std::stoi(val);
+                    else if (key == "OutputFileName") globalConfig.outputFileName = val;
+                }
+            }
+        } catch (const std::invalid_argument& e) {
+            // Apanha erros se o std::stoi tentar converter uma letra num numero
+            std::cerr << "[ERRO] Ficheiro inconsistente: Formato numerico invalido na linha: " << line << std::endl;
+            return false;
+        } catch (const std::out_of_range& e) {
+            std::cerr << "[ERRO] Ficheiro inconsistente: Numero demasiado grande na linha: " << line << std::endl;
+            return false;
         }
     }
     file.close();
