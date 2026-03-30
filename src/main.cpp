@@ -2,9 +2,13 @@
 #include <string>
 #include <vector>
 #include "backend.h"
+
 void runBatchMode(const std::string& input, const std::string& output);
 void handleInteractiveMenu();
 
+/**
+ * @brief Exibe o menu interativo principal na consola.
+ */
 void showMenu() {
     std::cout << "--- Scientific Conference Tool 2026 ---" << std::endl;
     std::cout << "1. Load Dataset (.csv)" << std::endl;
@@ -17,6 +21,11 @@ void showMenu() {
     std::cout << "Escolha uma opcao: ";
 }
 
+/**
+ * @brief Funcao principal (Ponto de entrada do programa).
+ * Verifica se existem argumentos de linha de comandos para ativar o modo batch.
+ * Caso contrario, inicia o menu interativo.
+ */
 int main(int argc, char* argv[]) {
     if (argc >= 2 && std::string(argv[1]) == "-b") {
         if (argc < 4) {
@@ -31,6 +40,12 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
+/**
+ * @brief Executa o programa de forma automatica (Modo Linha de Comandos).
+ * * Processa a leitura, atribuicao, analise de risco e exportacao numa unica
+ * * @param input O caminho para o ficheiro CSV de entrada.
+ * @param output O caminho para o ficheiro CSV de saida.
+ */
 void runBatchMode(const std::string& input, const std::string& output) {
     std::cout << "Modo Batch Ativado!" << std::endl;
     std::cout << "A ler de: " << input << std::endl;
@@ -50,6 +65,10 @@ void runBatchMode(const std::string& input, const std::string& output) {
     }
 }
 
+/**
+ * @brief Gere o ciclo principal de interacao com o utilizador.
+ * * Le as escolhas do utilizador, faz a validacao de inputs e invoca
+ */
 void handleInteractiveMenu() {
     int choice = -1;
     while (choice != 0) {
@@ -90,26 +109,19 @@ void handleInteractiveMenu() {
                 exportResults(globalConfig.outputFileName);
                 break;
             case 6: {
-                std::string inFilename;
-                std::cout << "Introduza o nome do ficheiro de ENTRADA (ex: dataset3.csv): ";
+                std::string inFilename, outFilename;
+
+                std::cout << "Introduza o nome do ficheiro de ENTRADA (ex: dataset.csv): ";
                 std::cin >> inFilename;
+
+                std::cout << "Introduza o nome do ficheiro de SAIDA (ex: output.csv): ";
+                std::cin >> outFilename;
+
                 std::string inputPath = "../input/" + inFilename;
 
                 std::cout << "\n[BATCH MODE] A processar tudo automaticamente...\n";
+                runBatchMode(inputPath, outFilename);
 
-                // Faz o fluxo do Batch Mode, mas usa o nome de saida que o CSV definiu!
-                if (loadInputAndBuildGraph(inputPath)) {
-                    runMaxFlowAssignment();
-
-                    if (globalConfig.riskAnalysis > 0) {
-                        runRiskAnalysis();
-                    }
-
-                    // Exporta usando o nome padrao lido do ficheiro (ex: output_dataset3.csv)
-                    exportResults(globalConfig.outputFileName);
-
-                    std::cout << "\n[BATCH MODE] Processo concluido com sucesso!\n";
-                }
                 break;
             }
             case 0:

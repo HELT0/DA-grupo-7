@@ -152,7 +152,6 @@ bool loadInputAndBuildGraph(const std::string& filename) {
                 }
             }
         } catch (const std::invalid_argument& e) {
-            // Apanha erros se o std::stoi tentar converter uma letra num numero
             std::cerr << "[ERRO] Ficheiro inconsistente: Formato numerico invalido na linha: " << line << std::endl;
             return false;
         } catch (const std::out_of_range& e) {
@@ -403,6 +402,10 @@ void exportResults(const std::string& filename) {
                 if (revIt != globalRevs.end()) {
                     int matchDom = getMatchDomain(s, *revIt, globalConfig);
                     assignments.push_back({s.id, revId, matchDom});
+
+                    std::cout << "SOURCE -> Submissao " << s.id
+                              << " -> Revisor " << revId
+                              << " -> SINK (Match: " << matchDom << ")" << std::endl;
                 }
             }
         }

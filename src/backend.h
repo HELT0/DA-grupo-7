@@ -4,11 +4,15 @@
 
 #ifndef PROJETO_BACKEND_H
 #define PROJETO_BACKEND_H
+
 #include <string>
 #include <vector>
-#include "../data_structures/Graph.h" // Descomenta quando tiveres o Graph.h
+#include "../data_structures/Graph.h" // Certifica-te que o caminho esta correto para a tua estrutura de pastas
 
-// Estruturas de Dados
+/**
+ * @brief Estrutura que representa uma submissao de um artigo cientifico.
+ * Armazena as informacoes lidas do ficheiro CSV relativas a cada paper.
+ */
 struct Submission {
     int id;
     std::string title;
@@ -18,6 +22,10 @@ struct Submission {
     int secondaryDomain;
 };
 
+/**
+ * @brief Estrutura que representa um revisor da conferencia.
+ * Armazena os dados pessoais e as areas de pericia (primaria e secundaria).
+ */
 struct Reviewer {
     int id;
     std::string name;
@@ -26,19 +34,29 @@ struct Reviewer {
     int secondaryExpertise;
 };
 
-// --- ESTRUTURAS AUXILIARES PARA A EXPORTAÇÃO ---
+/**
+ * @brief Estrutura auxiliar usada durante a exportacao dos resultados.
+ * Associa uma submissao a um revisor e guarda o dominio de match.
+ */
 struct AssignRecord {
     int subId;
     int revId;
     int matchDomain;
 };
 
+/**
+ * @brief Estrutura auxiliar para registar submissoes que nao obtiveram revisoes suficientes.
+ */
 struct MissingRecord {
     int subId;
     int domain;
     int missing;
 };
 
+/**
+ * @brief Estrutura que armazena as configuracoes e parametros globais do programa.
+ * Estes parametros ditam as regras do fluxo maximo e da analise de risco.
+ */
 struct Config {
     int minReviewsPerSubmission = 0;
     int maxReviewsPerReviewer = 0;
@@ -51,19 +69,27 @@ struct Config {
     std::string outputFileName = "output.csv";
 };
 
-// Variáveis Globais (Declaradas como extern)
+// ==========================================
+// VARIAVEIS GLOBAIS (Declaradas como extern)
+// ==========================================
 extern std::vector<Submission> globalSubs;
 extern std::vector<Reviewer> globalRevs;
 extern Config globalConfig;
 extern Graph<std::string> conferenceGraph;
 extern std::vector<int> globalRiskyReviewers;
 
-// Funções do Parser (implementadas no parser.cpp)
+// ==========================================
+// ASSINATURAS DAS FUNCOES (Implementadas no backend.cpp)
+// ==========================================
+
+// Funcao do Parser (Leitura e Construcao do Grafo)
 bool loadInputAndBuildGraph(const std::string& filename);
 
-// Funções do Backend (implementadas no backend.cpp)
+// Funcoes Principais de Atribuicao e Risco
 void runMaxFlowAssignment();
 void runRiskAnalysis();
+
+// Funcoes de Exportacao e Debug
 void exportResults(const std::string& filename);
 void displayGraph();
 
